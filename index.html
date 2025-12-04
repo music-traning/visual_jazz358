@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visual Jazz Theory - True Swing</title>
     <style>
-        body { background-color: #1a1a1a; color: #eee; font-family: "Helvetica Neue", Arial, sans-serif; text-align: center; padding: 20px; user-select: none; }
+        body { background-color: #1a1a1a; color: #eee; font-family: "Helvetica Neue", Arial, sans-serif; text-align: center; padding: 20px; user-select: none; margin: 0; }
         h1 { margin: 0 0 20px 0; font-size: 24px; color: #ddd; letter-spacing: 2px; }
 
-        .main-container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .main-container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-bottom: 50px; }
 
         /* 凡例 */
         .legend { display: inline-flex; justify-content: center; gap: 20px; padding: 10px 20px; background: #333; border-radius: 50px; margin-bottom: 10px; border: 1px solid #555; }
@@ -67,6 +67,11 @@
         .rhythm-switch input { display: none; }
         .rhythm-switch input:checked + span { background: #00ff88; color: #000; font-weight: bold; }
         .rhythm-switch span { display: block; padding: 4px 8px; border-radius: 2px; }
+
+        /* フッター */
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; font-size: 12px; color: #666; }
+        .footer a { color: #0088cc; text-decoration: none; transition: 0.2s; }
+        .footer a:hover { color: #00aaff; text-decoration: underline; }
 
     </style>
 </head>
@@ -158,6 +163,10 @@
             <div id="chordList" class="chord-list">
                 <div style="color:#666; font-size:12px;">ここにコードを追加してください</div>
             </div>
+        </div>
+
+        <div class="footer">
+            Special Thanks To <a href="https://toshikinunokawa.com/online-salon/" target="_blank">Nunokawa Toshiki Online Salon</a>
         </div>
 
     </div>
@@ -254,6 +263,7 @@
         let beatIndex = 0;
         let timerId = null;
         let audioCtx = null;
+        let countInRemaining = 0; // カウントダウン残り回数
 
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
@@ -262,8 +272,9 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             
-            let freq = isAccent ? 1000 : 600; 
-            let vol = isAccent ? 0.2 : 0.05;
+            // カウント中はより高い音でハッキリ鳴らす
+            let freq = isAccent ? 1200 : 600; 
+            let vol = isAccent ? 0.3 : 0.05;
 
             osc.frequency.value = freq;
             gain.gain.setValueAtTime(vol, time);
@@ -328,7 +339,9 @@
                 if(playList.length===0){ alert("コードがありません"); return; }
                 isPlaying=true; initAudio();
                 btn.innerText="■ STOP"; btn.classList.add('active');
-                currentIndex=0; beatIndex=0;
+                currentIndex=0; 
+                beatIndex=0;
+                countInRemaining = 4; // 再生開始時に4カウントをセット
                 step();
             }
         }
@@ -338,6 +351,20 @@
             const bpm = document.getElementById('bpmSlider').value;
             const secPerBeat = 60/bpm; // 1拍の長さ(秒)
             const now = audioCtx.currentTime; // 正確な現在時刻
+
+            // --- カウントダウン処理 ---
+            if (countInRemaining > 0) {
+                // 画面表示
+                document.getElementById('currentChord').innerText = "Count: " + countInRemaining;
+                document.getElementById('fretboard').innerHTML = ''; // 指板は消す
+                
+                // クリック音（アクセントで鳴らす）
+                playClick(now, true);
+                
+                countInRemaining--;
+                timerId = setTimeout(step, secPerBeat * 1000);
+                return; // ここで中断して次のループへ
+            }
 
             // 1. 画面更新 & 和音再生（拍の頭で実行）
             if(beatIndex === 0) {
@@ -359,7 +386,7 @@
                 // Jazz(2 & 4):
                 // beatIndex=1 (2拍目) と beatIndex=3 (4拍目) の時だけ鳴らす
                 if (beatIndex === 1 || beatIndex === 3) {
-                    playClick(now, false); // アクセントなし（フラット）で鳴らすのが通
+                    playClick(now, false); // アクセントなし
                 }
             }
 
