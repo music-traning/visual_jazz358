@@ -2,76 +2,161 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Visual Jazz Theory - True Swing</title>
     <style>
-        body { background-color: #1a1a1a; color: #eee; font-family: "Helvetica Neue", Arial, sans-serif; text-align: center; padding: 20px; user-select: none; margin: 0; }
-        h1 { margin: 0 0 20px 0; font-size: 24px; color: #ddd; letter-spacing: 2px; }
+        /* --- Base Styles --- */
+        body { background-color: #1a1a1a; color: #eee; font-family: "Helvetica Neue", Arial, sans-serif; text-align: center; padding: 20px; user-select: none; margin: 0; -webkit-tap-highlight-color: transparent; }
+        
+        /* タイトル周り */
+        h1 { margin: 0 0 15px 0; font-size: clamp(20px, 5vw, 28px); color: #ddd; letter-spacing: 1px; line-height: 1.4; }
+        .badge { display: inline-block; font-size: 12px; color: #00aa66; vertical-align: middle; border: 1px solid #00aa66; padding: 2px 6px; border-radius: 4px; margin-left: 5px; white-space: nowrap; }
 
         .main-container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-bottom: 50px; }
 
         /* 凡例 */
-        .legend { display: inline-flex; justify-content: center; gap: 20px; padding: 10px 20px; background: #333; border-radius: 50px; margin-bottom: 10px; border: 1px solid #555; }
-        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-        .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .legend { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 10px 20px; background: #333; border-radius: 50px; margin-bottom: 10px; border: 1px solid #555; max-width: 100%; box-sizing: border-box; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-        /* コード表示 */
-        .chord-display { font-size: 56px; font-weight: 800; height: 70px; margin: 10px 0; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); font-family: "Courier New", monospace; }
+        /* コード表示 (レスポンシブ対応) */
+        .chord-display { 
+            font-size: clamp(40px, 10vw, 64px); 
+            font-weight: 800; 
+            min-height: 70px; 
+            margin: 10px 0; 
+            color: #ffd700; 
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); 
+            font-family: "Courier New", monospace;
+            line-height: 1.2;
+        }
 
-        /* 指板 */
-        .fretboard { position: relative; width: 100%; height: 220px; background-color: #4a3c31; border: 6px solid #2a2a2a; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); margin-bottom: 20px; overflow: hidden; }
-        .string { position: absolute; left: 0; right: 0; height: 2px; background-color: #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .fret-line { position: absolute; top: 0; bottom: 0; width: 4px; background-color: #888; border-right: 2px solid #555; }
+        /* 指板 (スクロール対応ラッパー) */
+        .fretboard-wrapper {
+            width: 100%;
+            overflow-x: auto; /* スマホでスクロール可能に */
+            -webkit-overflow-scrolling: touch;
+            border-radius: 4px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            background-color: #2a2a2a; /* 背景色を追加 */
+        }
+        
+        .fretboard { 
+            position: relative; 
+            height: 220px; 
+            background-color: #4a3c31; 
+            border: 6px solid #2a2a2a; 
+            border-radius: 4px; 
+            /* スマホでも縮こまらないように最小幅を確保 */
+            min-width: 600px; 
+            box-sizing: border-box;
+        }
+
+        .string { position: absolute; left: 0; right: 0; height: 2px; background-color: #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; }
+        .fret-line { position: absolute; top: 0; bottom: 0; width: 4px; background-color: #888; border-right: 2px solid #555; pointer-events: none; }
         .fret-number { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 12px; color: #bbb; font-weight: bold; opacity: 0.7; }
-        .note-marker { position: absolute; width: 30px; height: 30px; border-radius: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.8); z-index: 10; transition: all 0.2s ease-out; }
+        
+        .note-marker { 
+            position: absolute; 
+            width: 28px; height: 28px; 
+            border-radius: 50%; 
+            transform: translate(-50%, -50%); 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 13px; 
+            color: white; 
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.8); 
+            z-index: 10; 
+            transition: all 0.2s ease-out; 
+        }
 
         /* 色定義 */
         .color-blue { background: radial-gradient(circle, #00aaff 0%, #0077cc 100%); box-shadow: 0 0 15px #00aaff; border: 2px solid white; }
         .color-green { background: radial-gradient(circle, #00ff88 0%, #00cc66 100%); box-shadow: 0 0 15px #00ff88; }
         .color-red { background: radial-gradient(circle, #ff4444 0%, #cc0000 100%); box-shadow: 0 0 20px #ff2222; z-index: 20; }
 
-        /* パネル */
+        /* パネル共通 */
         .panel { background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #444; text-align: left; }
-        .panel-title { font-size: 14px; color: #00ff88; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .panel-title { font-size: 14px; color: #00ff88; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 5px; }
 
         /* ボタン・入力 */
-        button { padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 4px; border: none; color: white; transition: 0.2s; font-weight: bold; }
+        button { 
+            padding: 10px 16px; /* タッチしやすいように少し拡大 */
+            font-size: 14px; cursor: pointer; border-radius: 4px; border: none; color: white; transition: 0.2s; font-weight: bold; 
+            touch-action: manipulation;
+        }
         button:hover { opacity: 0.8; }
         button:active { transform: translateY(2px); }
         .btn-primary { background: #0088cc; }
         .btn-danger { background: #cc3333; }
         .btn-success { background: #00aa66; }
         .btn-dark { background: #444; }
-        select, input[type=text] { padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; }
+        
+        select, input[type=text] { 
+            padding: 10px; 
+            background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px; 
+            box-sizing: border-box;
+        }
+        select:focus, input:focus { outline: 2px solid #0088cc; }
 
-        /* レイアウト調整 */
-        .storage-area { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .save-group { display: flex; gap: 5px; flex: 1; }
-        .builder-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
-        .chord-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; padding: 10px; background: #111; border: 1px inset #333; border-radius: 4px; }
-        .chord-card { background: #3a3a3a; padding: 5px 10px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #555; animation: popIn 0.3s; }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-        .delete-btn { background: #ff5555; width: 18px; height: 18px; font-size: 10px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
+        /* コントロールパネル (詳細レスポンシブ) */
         .play-controls { display: flex; flex-direction: column; gap: 15px; }
         .play-main-row { display: flex; gap: 10px; align-items: center; }
-        .main-play-btn { flex: 1; padding: 15px; font-size: 20px; background: linear-gradient(to bottom, #444, #222); border: 1px solid #666; }
+        .main-play-btn { flex: 1; padding: 15px; font-size: 18px; background: linear-gradient(to bottom, #444, #222); border: 1px solid #666; }
         .main-play-btn.active { background: linear-gradient(to bottom, #cc3333, #990000); border-color: #ff5555; }
 
         .settings-row { display: flex; align-items: center; gap: 20px; color: #aaa; font-size: 14px; flex-wrap: wrap; }
-        input[type=range] { flex: 1; cursor: pointer; }
-        
-        /* リズム選択スイッチ */
+        .setting-group { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+        .setting-group.border-left { border-left: 1px solid #555; padding-left: 15px; }
+
+        input[type=range] { flex: 1; cursor: pointer; min-width: 100px; }
+
+        /* リズムスイッチ */
         .rhythm-switch { display: flex; background: #111; border-radius: 4px; padding: 2px; border: 1px solid #555; }
-        .rhythm-switch label { padding: 5px 10px; cursor: pointer; border-radius: 2px; font-size: 12px; }
+        .rhythm-switch label { padding: 5px 10px; cursor: pointer; border-radius: 2px; font-size: 12px; flex: 1; text-align: center; }
         .rhythm-switch input { display: none; }
         .rhythm-switch input:checked + span { background: #00ff88; color: #000; font-weight: bold; }
         .rhythm-switch span { display: block; padding: 4px 8px; border-radius: 2px; }
 
-        /* フッター */
-        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; font-size: 12px; color: #666; }
+        /* ライブラリ & ビルダーエリア */
+        .storage-area { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .save-group { display: flex; gap: 5px; flex: 1; min-width: 200px; }
+        .save-group input { flex: 1; }
+
+        .builder-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+        .chord-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; padding: 10px; background: #111; border: 1px inset #333; border-radius: 4px; }
+        .chord-card { background: #3a3a3a; padding: 6px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #555; animation: popIn 0.3s; }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .delete-btn { background: #ff5555; width: 20px; height: 20px; font-size: 12px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; font-size: 12px; color: #666; word-break: break-all; }
         .footer a { color: #0088cc; text-decoration: none; transition: 0.2s; }
         .footer a:hover { color: #00aaff; text-decoration: underline; }
+
+        /* === MOBILE MEDIA QUERIES === */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            
+            /* 設定行を縦積みに */
+            .settings-row { flex-direction: column; align-items: stretch; gap: 15px; }
+            .setting-group { width: 100%; justify-content: space-between; }
+            .setting-group.border-left { border-left: none; padding-left: 0; border-top: 1px solid #444; padding-top: 15px; }
+            
+            /* 保存エリアの調整 */
+            .storage-area > select, .storage-area > button { width: 100%; flex: 1 1 48%; }
+            .storage-area > span { display: none; } /* 区切り線を消す */
+            .save-group { width: 100%; flex: 1 1 100%; }
+
+            /* ビルダーコントロール */
+            .builder-controls > select { flex: 1; }
+            .builder-controls > button { flex: 1; }
+        }
+
+        @media (max-width: 480px) {
+            .rhythm-switch label { font-size: 10px; padding: 4px; }
+            .legend { gap: 10px; padding: 8px 15px; }
+            .legend-item { font-size: 10px; }
+        }
 
     </style>
 </head>
@@ -80,7 +165,7 @@
     <div class="main-container">
         
         <div>
-            <h1>Visual Jazz Theory <span style="font-size:14px; color:#00aa66; vertical-align:middle; border:1px solid #00aa66; padding:2px 6px; border-radius:4px;">SWING MASTER</span></h1>
+            <h1>Visual Jazz Theory <span class="badge">SWING MASTER</span></h1>
             <div class="legend">
                 <div class="legend-item"><div class="legend-dot color-blue"></div> Code Tone</div>
                 <div class="legend-item"><div class="legend-dot color-green"></div> Tension</div>
@@ -89,7 +174,9 @@
             <div id="currentChord" class="chord-display">Let's Swing.</div>
         </div>
 
-        <div id="fretboard" class="fretboard"></div>
+        <div class="fretboard-wrapper">
+            <div id="fretboard" class="fretboard"></div>
+        </div>
 
         <div class="panel">
             <div class="panel-title">🎮 CONTROL PANEL</div>
@@ -99,19 +186,21 @@
                 </div>
                 
                 <div class="settings-row">
-                    <label id="bpmDisplay" style="font-weight:bold; color:#00ff88; width: 80px;">BPM: 120</label>
-                    <input type="range" id="bpmSlider" min="40" max="300" value="120" oninput="updateBpm(this.value)">
+                    <div class="setting-group">
+                        <label id="bpmDisplay" style="font-weight:bold; color:#00ff88; width: 70px;">BPM: 120</label>
+                        <input type="range" id="bpmSlider" min="40" max="300" value="120" oninput="updateBpm(this.value)">
+                    </div>
                     
-                    <div style="display:flex; align-items:center; gap:10px; border-left:1px solid #555; padding-left:15px;">
+                    <div class="setting-group border-left">
                         <span>Click:</span>
                         <div class="rhythm-switch">
-                            <label><input type="radio" name="rhythmMode" value="on" checked><span>表 (1,2,3,4)</span></label>
-                            <label><input type="radio" name="rhythmMode" value="jazz"><span>Jazz (2 & 4)</span></label>
+                            <label><input type="radio" name="rhythmMode" value="on" checked><span>表 (1-4)</span></label>
+                            <label><input type="radio" name="rhythmMode" value="jazz"><span>Jazz (2&4)</span></label>
                         </div>
-                        <label><input type="checkbox" id="clickToggle" checked> ON</label>
+                        <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="clickToggle" checked> ON</label>
                     </div>
 
-                    <div style="display:flex; align-items:center; gap:10px; border-left:1px solid #555; padding-left:15px;">
+                    <div class="setting-group border-left">
                         <span>Display:</span>
                         <label><input type="radio" name="disp" value="note" checked onclick="redraw()"> 音名</label>
                         <label><input type="radio" name="disp" value="degree" onclick="redraw()"> 度数</label>
@@ -136,7 +225,7 @@
                 </select>
                 <button class="btn-primary" onclick="loadUserSong()">読込</button>
                 <button class="btn-danger" onclick="deleteUserSong()">削除</button>
-                <span style="flex:1"></span>
+                
                 <div class="save-group">
                     <input type="text" id="saveName" placeholder="曲名を入力...">
                     <button class="btn-success" onclick="saveCurrentSong()">保存</button>
@@ -263,7 +352,7 @@
         let beatIndex = 0;
         let timerId = null;
         let audioCtx = null;
-        let countInRemaining = 0; // カウントダウン残り回数
+        let countInRemaining = 0;
 
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
@@ -272,7 +361,6 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             
-            // カウント中はより高い音でハッキリ鳴らす
             let freq = isAccent ? 1200 : 600; 
             let vol = isAccent ? 0.3 : 0.05;
 
@@ -341,7 +429,7 @@
                 btn.innerText="■ STOP"; btn.classList.add('active');
                 currentIndex=0; 
                 beatIndex=0;
-                countInRemaining = 4; // 再生開始時に4カウントをセット
+                countInRemaining = 4;
                 step();
             }
         }
@@ -349,51 +437,37 @@
         function step() {
             if(!isPlaying) return;
             const bpm = document.getElementById('bpmSlider').value;
-            const secPerBeat = 60/bpm; // 1拍の長さ(秒)
-            const now = audioCtx.currentTime; // 正確な現在時刻
+            const secPerBeat = 60/bpm;
+            const now = audioCtx.currentTime;
 
-            // --- カウントダウン処理 ---
             if (countInRemaining > 0) {
-                // 画面表示
                 document.getElementById('currentChord').innerText = "Count: " + countInRemaining;
-                document.getElementById('fretboard').innerHTML = ''; // 指板は消す
-                
-                // クリック音（アクセントで鳴らす）
+                document.getElementById('fretboard').innerHTML = '';
                 playClick(now, true);
-                
                 countInRemaining--;
                 timerId = setTimeout(step, secPerBeat * 1000);
-                return; // ここで中断して次のループへ
+                return;
             }
 
-            // 1. 画面更新 & 和音再生（拍の頭で実行）
             if(beatIndex === 0) {
                 drawFretboard();
                 const c = playList[currentIndex];
                 let rootP = 48 + c.rootNote; if(rootP>60) rootP-=12;
-                // 和音は4拍分鳴らす
                 c.voicing.forEach(v => playTone(rootP+v, secPerBeat*4, now));
                 currentIndex = (currentIndex+1)%playList.length;
             }
 
-            // 2. クリック音のスケジュール
             const rhythmMode = document.querySelector('input[name="rhythmMode"]:checked').value;
             
             if (rhythmMode === 'on') {
-                // 表拍(1,2,3,4): 毎回鳴らす。1拍目だけアクセント
                 playClick(now, beatIndex === 0);
             } else {
-                // Jazz(2 & 4):
-                // beatIndex=1 (2拍目) と beatIndex=3 (4拍目) の時だけ鳴らす
                 if (beatIndex === 1 || beatIndex === 3) {
-                    playClick(now, false); // アクセントなし
+                    playClick(now, false);
                 }
             }
 
-            // 次のステップへ
             beatIndex = (beatIndex + 1) % 4;
-            
-            // 次のループをセット
             timerId = setTimeout(step, secPerBeat * 1000);
         }
 
